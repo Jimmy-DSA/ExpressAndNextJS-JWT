@@ -9,9 +9,10 @@ export const authMiddleware = (
   next: NextFunction
 ) => {
   const token = req.headers.authorization?.split(" ")[1];
+  console.log("token:", token);
 
   if (!token) {
-    res.status(401).json({ error: "no token provided" });
+    res.status(403).json({ error: "no token provided" });
     return;
   }
 

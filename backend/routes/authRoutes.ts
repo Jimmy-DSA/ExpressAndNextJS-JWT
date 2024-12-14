@@ -42,6 +42,10 @@ router.post("/register", async (req: Request, res: Response) => {
     res.status(400).json({ message: "username or password missing." });
     return;
   }
+  if (users.find((user) => user.username === username)) {
+    res.status(400).json({ message: "username já existe." });
+    return;
+  }
 
   const hashedPassword = await bcrypt.hash(password, 10);
   users.push({ id: Date.now().toString(), username, password: hashedPassword });
@@ -104,17 +108,17 @@ router.post("/refresh", (req: Request, res: Response) => {
 
     res.json({
       token: newToken,
-      expiresIn: tokenExpirationDate,
+      expiresAt: tokenExpirationDate,
       refreshToken: newRefreshToken,
     });
   } catch (err) {
-    res.status(403).json({ message: "invalid refresh token." });
+    res.status(403).json({ error: "invalid refresh token." });
   }
 });
 
-router.post("/welcome", authMiddleware, (req: Request, res: Response) => {
+router.get("/welcome", authMiddleware, (req: Request, res: Response) => {
   res.json({
-    message: `welcome, ${req.user?.username}! this is a protected route.`,
+    message: `Olá ${req.user?.username}, essa é uma rota protegida!`,
   });
 });
 

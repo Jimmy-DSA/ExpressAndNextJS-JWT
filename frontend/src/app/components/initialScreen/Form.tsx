@@ -1,7 +1,8 @@
 "use client";
 
-import { loginAction } from "@/app/loginAction";
-import React, { useActionState, useState } from "react";
+import { loginAction } from "@/app/authActions";
+import React, { useActionState, useRef, useState } from "react";
+import { z } from "zod";
 
 const initialState = {
   errors: "",
@@ -13,17 +14,123 @@ function Form() {
     loginAction,
     initialState
   );
+  const [registerPending, setRegisterPending] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const [registerErrors, setRegisterErrors] = useState<{
+    errors?: string;
+    username?: string[];
+    password?: string[];
+  }>();
+
+  const [successMessage, setSuccessMessage] = useState<string | undefined>();
+
+  const schema = z.object({
+    username: z
+      .string({
+        invalid_type_error: "Nome inválido",
+      })
+      .min(3, "O nome de usuário deve ter pelo menos 3 caracteres")
+      .max(20, "O nome de usuário pode ter no máximo 20 caracteres"),
+
+    password: z.string({
+      invalid_type_error: "Senha inválida",
+    }),
+  });
+
+  const registerAction = async () => {
+    if (!formRef.current) {
+      console.log("without form ref");
+      return;
+    }
+    setSuccessMessage(undefined);
+    setRegisterErrors(undefined);
+    console.log("Antes de setRegisterPending:", registerPending); // Verificar o valor atual
+    setRegisterPending(true);
+    console.log("Depois de setRegisterPending:", registerPending); // Este log ainda exibirá o valor antigo devido à natureza assíncrona do setState
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    console.log("Após o delay, registerPending:", registerPending);
+    const formData = new FormData(formRef.current);
+
+    const { username, password } = Object.fromEntries(formData);
+    const validatedFields = schema.safeParse({
+      username: username,
+      password: password,
+    });
+    if (!validatedFields.success) {
+      setRegisterErrors(validatedFields.error.flatten().fieldErrors);
+      setRegisterPending(false);
+      return;
+    }
+    try {
+      const response = await fetch(`http://localhost:3000/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.log("Erro:", data.message);
+        setRegisterErrors({ errors: data.message });
+      } else {
+        console.log("data:", data);
+        formRef.current.reset();
+        setSuccessMessage("registrado com sucesso");
+      }
+    } catch (e) {
+      if (e instanceof Error) {
+        console.log("here");
+        setRegisterErrors({ errors: e.message || "erro ao registrar" });
+      }
+    } finally {
+      setRegisterPending(false);
+    }
+
+    setRegisterPending(false);
+  };
 
   return (
-    <form className="m-4 border  rounded-lg p-4" action={formAction}>
+    <form
+      ref={formRef}
+      className="m-4 border  rounded-lg p-4"
+      action={mode === "login" ? formAction : undefined}
+      onSubmit={(e) => {
+        if (mode === "register") {
+          e.preventDefault();
+          registerAction();
+        } else {
+          (() => {})();
+        }
+      }}
+    >
       <h1 className="text-2xl font-bold">
         {mode === "login" ? "Login" : "Registrar"}
       </h1>
       <div className="relative">
         <label className="block">username</label>
         <input type="text" name="username" className="border p-2 w-full" />
-        {state.formDataErrors?.username && (
-          <div className="absolute">{state.formDataErrors.username[0]}</div>
+        {(state.formDataErrors?.username || registerErrors?.username) && (
+          <div
+            className="absolute"
+            style={{
+              top: 0,
+              left: 94,
+              width: 150,
+              fontSize: 10,
+              backgroundColor: "red",
+              color: "white",
+              borderRadius: 5,
+              padding: "5px 10px",
+              lineHeight: "10px",
+              textAlign: "center",
+            }}
+          >
+            {state?.formDataErrors?.username?.[0] ?? registerErrors?.username}
+          </div>
         )}
       </div>
 
@@ -33,9 +140,9 @@ function Form() {
       </div>
       <div className="w-full flex items-center justify-center mt-3">
         <button
-          disabled={pending}
+          disabled={pending || registerPending}
           className={`${
-            pending ? "bg-gray-300" : "bg-blue-500"
+            pending || registerPending ? "bg-gray-300" : "bg-blue-500"
           } w-full text-white p-2 rounded-md`}
         >
           {mode === "login" ? "Login" : "Registrar"}
@@ -47,13 +154,26 @@ function Form() {
         </span>
         <a
           className="text-sm text-blue-500 underline cursor-pointer"
-          onClick={() => setMode(mode === "login" ? "register" : "login")}
+          onClick={() => {
+            state.formDataErrors = undefined;
+            setRegisterErrors(undefined);
+            setSuccessMessage(undefined);
+            setMode(mode === "login" ? "register" : "login");
+          }}
         >
-          {mode === "login" ? "Login" : "Registrar"}
+          {mode === "login" ? "Registrar" : "Login"}
         </a>
       </div>
-      {state.errors && (
-        <span className="block text-red-500 text-sm mt-4">{state.errors}</span>
+      {state.errors ||
+        (registerErrors?.errors && (
+          <span className="block text-red-500 text-sm mt-3 text-center">
+            {state.errors || registerErrors.errors}
+          </span>
+        ))}
+      {successMessage && (
+        <span className="block text-green-500 text-sm mt-3 text-center">
+          {successMessage}
+        </span>
       )}
     </form>
   );

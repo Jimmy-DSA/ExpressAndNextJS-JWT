@@ -13,7 +13,11 @@ const ttl = 60 * 60 * 24 * 7;
 
 export async function getSession() {
   const cookieStore = await cookies();
-  return getIronSession<{ token: string }>(cookieStore, {
+  return getIronSession<{
+    token: string;
+    expiresAt: string;
+    refreshToken: string;
+  }>(cookieStore, {
     password: secret,
     cookieName: "auth",
     ttl,
@@ -27,9 +31,16 @@ export async function getSession() {
   });
 }
 
-export async function saveSession(token: string) {
+export async function saveSession(
+  token: string,
+  expiresAt: string,
+  refreshToken: string
+) {
   const session = await getSession();
-  const decoded = jwt.verify(token, secret) as { id: string; username: string };
+  const decoded = jwt.verify(token, "test_jwt") as {
+    id: string;
+    username: string;
+  };
   const userData = JSON.stringify({
     id: decoded.id,
     username: decoded.username,
@@ -37,26 +48,19 @@ export async function saveSession(token: string) {
 
   const cookieStore = await cookies();
   cookieStore.set("user_data", userData, {
-    httpOnly: true,
     secure: false,
     sameSite: "lax",
     path: "/",
   });
   session.token = token;
+  session.refreshToken = refreshToken;
+  session.expiresAt = expiresAt;
   await session.save();
 }
 
 export async function destroySession() {
   const session = await getSession();
   session.destroy();
-}
-
-export async function getUser(): Promise<User | null> {
-  const session = await getSession();
-
-  if (!session.token) {
-    return null;
-  }
-
-  return jwt.decode(session.token) as unknown as User;
+  const cookieStore = await cookies();
+  cookieStore.delete("user_data");
 }
