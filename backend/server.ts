@@ -24,6 +24,7 @@ export let users: userInterface[];
 (async () => {
   const hashedPassword = await bcrypt.hash("password1", 10);
   users = [
+    // saving users in memory
     {
       id: "gfdffgdfgfgfg",
       username: "user1",
@@ -32,7 +33,7 @@ export let users: userInterface[];
   ];
 })();
 
-export const refreshTokens: { [key: string]: string } = {};
+export const refreshTokens: { [key: string]: string } = {}; // saving refresh tokens in memory
 
 server.use("/auth", authRoutes);
 

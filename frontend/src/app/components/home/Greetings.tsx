@@ -7,6 +7,7 @@ import { isTokenExpired } from "@/app/contexts/authContext";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import CheckIcon from "@mui/icons-material/Check";
+import { config } from "../../config";
 
 export default function Greetings() {
   const [userData, setUserData] = useState<{
@@ -35,14 +36,13 @@ export default function Greetings() {
   }, [expiresAt]);
 
   const verifyRefresh = async () => {
-    console.log("()verifyRefresh");
+    console.log("verifyRefresh()");
     if (!expiresAtRef.current) {
       console.log("expiresAt still null");
       return;
     }
     if (firstRender.current) {
       firstRender.current = false;
-      await new Promise((resolve) => setTimeout(resolve, 3000));
       return;
     }
     console.log("expiresAtRef:", expiresAtRef.current);
@@ -95,13 +95,16 @@ export default function Greetings() {
       validToken = check.token;
     }
 
-    const response = await fetch(`http://localhost:3000/auth/welcome`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${validToken}`,
-      },
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API}/auth/welcome`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${validToken}`,
+        },
+      }
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -124,10 +127,11 @@ export default function Greetings() {
       return;
     }
     REQUEST_PROTECTED_ROUTE();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstLoad, lastRefresh]);
 
   useEffect(() => {
-    let isMounted = true; // Variável para controlar se o componente está ativo
+    let isMounted = true;
     let timeoutId: NodeJS.Timeout;
     const runInterval = async () => {
       if (!isMounted) return;
@@ -137,9 +141,10 @@ export default function Greetings() {
     runInterval();
 
     return () => {
-      isMounted = false; // Marca como desmontado
-      clearTimeout(timeoutId); // Limpa o timeout pendente
+      isMounted = false;
+      clearTimeout(timeoutId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -165,6 +170,15 @@ export default function Greetings() {
     <div>
       <div className="text-center">{`Seja bem vindo ${userData?.username}!`}</div>
       <div className="text-center text-green-500">{message}</div>
+      {expiresAt ? (
+        <div className="mt-4 text-center text-gray-400">
+          Expira as{" "}
+          {new Date(expiresAt).toLocaleTimeString("pt-BR", { hour12: false })}
+        </div>
+      ) : (
+        <div className="mt-4 text-center text-gray-400">Expira as 00:00:00</div>
+      )}
+
       <div style={{ height: 40 }}></div>
       {checkingToken && (
         <>

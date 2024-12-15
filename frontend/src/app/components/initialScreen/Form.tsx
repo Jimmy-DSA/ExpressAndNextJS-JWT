@@ -3,9 +3,12 @@
 import { loginAction } from "@/app/authActions";
 import React, { useActionState, useRef, useState } from "react";
 import { z } from "zod";
+import { config } from "../../config";
 
 const initialState = {
   errors: "",
+  username: "",
+  password: "",
 };
 
 function Form() {
@@ -40,16 +43,13 @@ function Form() {
 
   const registerAction = async () => {
     if (!formRef.current) {
-      console.log("without form ref");
+      console.log("without formRef");
       return;
     }
     setSuccessMessage(undefined);
     setRegisterErrors(undefined);
-    console.log("Antes de setRegisterPending:", registerPending); // Verificar o valor atual
     setRegisterPending(true);
-    console.log("Depois de setRegisterPending:", registerPending); // Este log ainda exibirá o valor antigo devido à natureza assíncrona do setState
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    console.log("Após o delay, registerPending:", registerPending);
+
     const formData = new FormData(formRef.current);
 
     const { username, password } = Object.fromEntries(formData);
@@ -63,13 +63,16 @@ function Form() {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:3000/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API}/auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        }
+      );
 
       const data = await response.json();
 
@@ -112,7 +115,12 @@ function Form() {
       </h1>
       <div className="relative">
         <label className="block">username</label>
-        <input type="text" name="username" className="border p-2 w-full" />
+        <input
+          type="text"
+          name="username"
+          defaultValue={mode === "login" ? state.username : undefined}
+          className="border p-2 w-full"
+        />
         {(state.formDataErrors?.username || registerErrors?.username) && (
           <div
             className="absolute"
@@ -136,7 +144,12 @@ function Form() {
 
       <div>
         <label className="block">password</label>
-        <input type="password" name="password" className="border p-2 w-full" />
+        <input
+          type="password"
+          name="password"
+          defaultValue={mode === "login" ? state.username : undefined}
+          className="border p-2 w-full"
+        />
       </div>
       <div className="w-full flex items-center justify-center mt-3">
         <button
@@ -150,7 +163,7 @@ function Form() {
       </div>
       <div className="block mt-1">
         <span className="text-sm">
-          {mode === "login" ? "Tem uma conta? " : "Não tem uma conta? "}
+          {mode === "login" ? "Não tem uma conta? " : "Tem uma conta? "}
         </span>
         <a
           className="text-sm text-blue-500 underline cursor-pointer"

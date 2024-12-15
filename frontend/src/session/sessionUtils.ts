@@ -8,24 +8,34 @@ export type User = {
   username: string;
 };
 
-const secret = "12345678901234567890123456789012"; //env var
-const ttl = 60 * 60 * 24 * 7;
+if (!process.env.MODE) {
+  throw new Error("MODE is not defined in the environment variables");
+}
+
+if (!process.env.NEXT_PUBLIC_API) {
+  throw new Error("API is not defined in the environment variables");
+}
 
 export async function getSession() {
+  if (!process.env.SESSION_COOKIE_KEY) {
+    throw new Error(
+      "SESSION_COOKIE_KEY is not defined in the environment variables"
+    );
+  }
+
   const cookieStore = await cookies();
   return getIronSession<{
     token: string;
     expiresAt: string;
     refreshToken: string;
   }>(cookieStore, {
-    password: secret,
+    password: process.env.SESSION_COOKIE_KEY,
     cookieName: "auth",
-    ttl,
     cookieOptions: {
       httpOnly: true,
-      secure: false, // set this to false in local (non-HTTPS) development
+      secure: process.env.MODE === "development" ? false : true, // set this to false in local (non-HTTPS) development
       sameSite: "lax", // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite#lax
-      maxAge: (ttl === 0 ? 2147483647 : ttl) - 60, // Expire cookie before the session expires.
+
       path: "/",
     },
   });
@@ -36,8 +46,11 @@ export async function saveSession(
   expiresAt: string,
   refreshToken: string
 ) {
+  if (!process.env.SECRET_KEY) {
+    throw new Error("SECRET_KEY is not defined in the environment variables");
+  }
   const session = await getSession();
-  const decoded = jwt.verify(token, "test_jwt") as {
+  const decoded = jwt.verify(token, process.env.SECRET_KEY) as {
     id: string;
     username: string;
   };

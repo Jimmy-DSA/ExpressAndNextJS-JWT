@@ -8,12 +8,12 @@ function Home() {
   return (
     <AuthProvider>
       <div className="p-4 flex flex-col h-lvh w-full">
-        <div className="text-3xl font-bold">Home</div>
-        <Greetings></Greetings>
-        <div className="flex-grow"></div>
-        <div className="mt-5">
+        <div className="flex justify-between items-center">
+          <div className="text-3xl font-bold">Home</div>
           <LogoutButton></LogoutButton>
         </div>
+        <Greetings></Greetings>
+        <div className="flex-grow"></div>
         <ExpiredSessionModal></ExpiredSessionModal>
       </div>
     </AuthProvider>

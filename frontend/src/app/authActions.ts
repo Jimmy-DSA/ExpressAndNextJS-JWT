@@ -31,7 +31,7 @@ export const refreshExpiredToken = async (): Promise<boolean> => {
 
     try {
       const refreshResponse = await fetch(
-        "http://localhost:3000/auth/refresh",
+        `${process.env.NEXT_PUBLIC_API}/auth/refresh`,
         {
           method: "POST",
           headers: {
@@ -67,7 +67,7 @@ export const refreshExpiredToken = async (): Promise<boolean> => {
 };
 
 export const loginAction = async (prevState: unknown, formData: FormData) => {
-  console.log("login action called");
+  console.log("loginAction()");
   prevState = undefined;
   const { username, password } = Object.fromEntries(formData);
   const validatedFields = schema.safeParse({
@@ -78,10 +78,12 @@ export const loginAction = async (prevState: unknown, formData: FormData) => {
   if (!validatedFields.success) {
     return {
       formDataErrors: validatedFields.error.flatten().fieldErrors,
+      username: username.toString(),
+      password: password.toString(),
     };
   }
 
-  const response = await fetch(`http://localhost:3000/auth/login`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -92,6 +94,8 @@ export const loginAction = async (prevState: unknown, formData: FormData) => {
   if (!response.ok) {
     return {
       errors: "password ou username incorretos",
+      username: username.toString(),
+      password: password.toString(),
     };
   } else {
     const parsedResponse = await response.json();

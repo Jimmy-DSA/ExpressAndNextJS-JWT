@@ -19,7 +19,7 @@ export const authMiddleware = (
   try {
     const decoded = jwt.verify(token, config.SECRET_KEY) as JwtPayloadCustom;
 
-    req.user = decoded;
+    req.user = decoded; // saving authenticated user information in request user property
     next();
   } catch (error: any) {
     if (error.name === "TokenExpiredError") {

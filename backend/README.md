@@ -1,4 +1,4 @@
-## Next.js JWT Token Authentication
+## Express.js JWT Token Authentication
 
 ```bash
 npm run dev
